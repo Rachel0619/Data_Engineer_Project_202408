@@ -4,12 +4,16 @@
 
 1. Connecting pgAdmin and Postgres
 
-Run this command in the terminal:
+Open your terminal and run the following command:
 
 ```
-docker-oompose up
+docker-compose up
 ```
 
-Navigate to chrome and type "localhost:8080". After logined into postgres database, connect to server.
+Open Chrome and navigate to "localhost:8080". After logging in to pgAdmin, connect to the PostgreSQL server.
 
-You can run `docker-compose down` to shut down the container.
+To shut down the containers, run:
+
+```
+docker-compose down
+```
