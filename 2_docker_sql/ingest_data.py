@@ -14,30 +14,37 @@ def main(params):
     db = params.db
     table_name = params.table_name
     url = params.url
-    parquet_name = "output.parquet"
+    file_name = url.split('/')[-1]
 
-    os.system(f"wget {url} -O {parquet_name}")
+    os.system(f"wget {url} -O {file_name}")
 
-    parquet_file = pd.read_parquet(parquet_name)
-    parquet_file.to_csv('yellow_trip_data.csv')
+    if file_name.endswith('.parquet'):
+        parquit_file = pd.read_parquet(file_name)
+        parquit_file.to_csv('yellow_trip_data.csv')
+        df = pd.read_csv('yellow_trip_data.csv')
+        df_iter = pd.read_csv('yellow_trip_data.csv', iterator=True, chunksize=100000)
+    elif file_name.endswith('.csv'):
+        df = pd.read_csv(file_name)
+        df_iter = pd.read_csv(file_name, iterator=True, chunksize=100000)
+    else:
+        raise ValueError("Unsupported file format")
 
     # download the csv
     engine = create_engine(f'postgresql://{user}:{password}@{host}:{port}/{db}')
     engine.connect()
 
-    df = pd.read_csv('yellow_trip_data.csv')
-
     df.head(0).to_sql(name=table_name, con=engine, if_exists="replace")
-    df_iter = pd.read_csv('yellow_trip_data.csv', iterator=True, chunksize=100000)
-
-    df = next(df_iter)
 
     while True:
-        t_start = time()
-        df = next(df_iter)
-        df.to_sql(name=table_name, con=engine, if_exists="append")
-        t_end = time()
-        print("inserted another chunk..., took %.3f second" % (t_end-t_start))
+        try:
+            t_start = time()
+            df_chunk = next(df_iter)
+            df_chunk.to_sql(name=table_name, con=engine, if_exists="append")
+            t_end = time()
+            print("inserted another chunk..., took %.3f second" % (t_end-t_start))
+        except StopIteration:
+            print(f"Ingestion complete for {table_name}")
+            break
 
 if __name__=="__main__":
 
